@@ -13,13 +13,15 @@
 	#error Operating System Not Supported
 #endif
 
-int main(int ArgumentCount, const char* Arguments)
+int main(int ArgumentCount, char** Arguments)
 {
 	int SleepMs = 1000;
 
-	if (ArgumentCount > 0)
+	if (Arguments[1])
 	{
-		//SleepMs = std::atoi(Arguments);
+		SleepMs = std::atoi(Arguments[1]);
+		if (SleepMs == 0)
+			SleepMs = 1000;
 	}
 
 	PresiderServer* Server = new PresiderServer;
