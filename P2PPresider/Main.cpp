@@ -31,5 +31,7 @@ int main(int ArgumentCount, char** Arguments)
 		}
 	}
 
+	Server->Shutdown();
+
 	return 0;
 }
