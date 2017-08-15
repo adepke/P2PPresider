@@ -2,8 +2,6 @@
 
 bool PresiderServer::Initialize()
 {
-	memset(&WaitingClient, 0, sizeof(WaitingClient));
-
 	if (WSAStartup(0x0202, &Data) == SOCKET_ERROR)
 	{
 		return false;
@@ -53,7 +51,7 @@ bool PresiderServer::Update()
 	char* DataReceived = new char[32];
 
 	// Blocking call to recvfrom(), so we wait here until some data is received from a connecting client.
-	int SizeReceived = recvfrom(Socket, DataReceived, 4096, 0, (sockaddr*)&ClientAddress, &Size);
+	int SizeReceived = recvfrom(Socket, DataReceived, 32, 0, (sockaddr*)&ClientAddress, &Size);
 
 	std::string DataString(DataReceived);
 
@@ -69,10 +67,8 @@ bool PresiderServer::Update()
 	if (WaitingClient.sin_addr.s_addr != 0)
 	{
 		std::string MessageA;
-		MessageA = "PEER";
-		MessageA += std::to_string(ClientAddress.sin_addr.s_addr);
-		MessageA += ":";
-		MessageA += std::to_string(ClientAddress.sin_port);
+		MessageA = "PEER" + ClientAddress.sin_addr.s_addr;
+		MessageA += ":" + ClientAddress.sin_port;
 
 		if (sendto(Socket, MessageA.c_str(), strlen(MessageA.c_str()) + 1, 0, (const sockaddr*)&WaitingClient, sizeof(WaitingClient)) <= 0)
 		{
@@ -82,10 +78,8 @@ bool PresiderServer::Update()
 		}
 
 		std::string MessageB;
-		MessageB = "PEER";
-		MessageB += std::to_string(WaitingClient.sin_addr.s_addr);
-		MessageB += ":";
-		MessageB += std::to_string(WaitingClient.sin_port);
+		MessageB = "PEER" + WaitingClient.sin_addr.s_addr;
+		MessageB += ":" + WaitingClient.sin_port;
 
 		if (sendto(Socket, MessageB.c_str(), strlen(MessageB.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
 		{
