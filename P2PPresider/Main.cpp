@@ -2,20 +2,9 @@
 
 #include <iostream>
 
-#if   defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__WINDOWS__)
-	#define OS_WINDOWS
-	#define WIN32_MEAN_AND_LEAN
-	#include <Windows.h>
-#elif defined(__linux__) || defined(linux) || defined(__linux)
-	#define OS_LINUX
-	#include <unistd.h>
-#else
-	#error Operating System Not Supported
-#endif
-
 int main(int ArgumentCount, char** Arguments)
 {
-	int SleepMs = 1000;
+	int SleepMs = 1;
 
 	if (Arguments[1])
 	{
@@ -50,12 +39,6 @@ int main(int ArgumentCount, char** Arguments)
 
 			return -1;
 		}
-
-#ifdef OS_WINDOWS
-		Sleep(SleepMs);
-#elif defined OS_LINUX
-		usleep(SleepMs * 1000)
-#endif
 	}
 
 	return 0;

@@ -7,7 +7,7 @@ bool PresiderServer::Initialize()
 		return false;
 	}
 
-	Socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	Socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (Socket == INVALID_SOCKET)
 	{
 		WSACleanup();
@@ -51,7 +51,7 @@ bool PresiderServer::Update()
 	char* DataReceived = new char[32];
 
 	// Blocking call to recvfrom(), so we wait here until some data is received from a connecting client.
-	int SizeReceived = recvfrom(Socket, DataReceived, 32, 0, (sockaddr*)&ClientAddress, &Size);
+	int SizeReceived = recvfrom(Socket, DataReceived, 4096, 0, (sockaddr*)&ClientAddress, &Size);
 
 	std::string DataString(DataReceived);
 
@@ -67,10 +67,8 @@ bool PresiderServer::Update()
 	if (WaitingClient.sin_addr.s_addr != 0)
 	{
 		std::string MessageA;
-		const char* ClientAAddressBuffer = (const char*)ClientAddress.sin_addr.s_addr;
-		const char* ClientAPortBuffer = (const char*)ClientAddress.sin_port;
-		MessageA = "PEER" + *ClientAAddressBuffer;
-		MessageA += ":" + *ClientAPortBuffer;
+		MessageA = "PEER" + ClientAddress.sin_addr.s_addr;
+		MessageA += ":" + ClientAddress.sin_port;
 
 		if (sendto(Socket, MessageA.c_str(), strlen(MessageA.c_str()) + 1, 0, (const sockaddr*)&WaitingClient, sizeof(WaitingClient)) <= 0)
 		{
@@ -80,10 +78,8 @@ bool PresiderServer::Update()
 		}
 
 		std::string MessageB;
-		const char* ClientBAddressBuffer = (const char*)WaitingClient.sin_addr.s_addr;
-		const char* ClientBPortBuffer = (const char*)WaitingClient.sin_port;
-		MessageB = "PEER" + *ClientBAddressBuffer;
-		MessageB += ":" + *ClientBPortBuffer;
+		MessageB = "PEER" + WaitingClient.sin_addr.s_addr;
+		MessageB += ":" + WaitingClient.sin_port;
 
 		if (sendto(Socket, MessageB.c_str(), strlen(MessageB.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
 		{
