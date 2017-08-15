@@ -55,6 +55,8 @@ bool PresiderServer::Update()
 
 	std::string DataString(DataReceived);
 
+	delete[] DataReceived;
+
 	if (DataString != "CONNECT")
 	{
 		// This is not a failure, just a client that does not want to be paired.
