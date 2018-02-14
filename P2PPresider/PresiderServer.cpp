@@ -1,5 +1,9 @@
 #include "PresiderServer.h"
 
+#include <Ws2tcpip.h>
+
+#include <iostream>
+
 bool PresiderServer::Initialize()
 {
 	if (WSAStartup(0x0202, &Data) == SOCKET_ERROR)
@@ -37,6 +41,8 @@ bool PresiderServer::Initialize()
 		return false;
 	}
 
+	WaitingClient.sin_addr.s_addr = 0;
+
 	return true;
 }
 
@@ -57,18 +63,41 @@ bool PresiderServer::Update()
 
 	delete[] DataReceived;
 
+	DataString = DataString.substr(0, SizeReceived);
+
 	if (DataString != "CONNECT")
 	{
 		// This is not a failure, just a client that does not want to be paired.
 		return true;
 	}
 
+	// Confirm this isn't the same client reconnecting.
+	if (WaitingClient.sin_addr.s_addr != 0)
+	{
+		if (WaitingClient.sin_addr.s_addr == ClientAddress.sin_addr.s_addr || WaitingClient.sin_port == ClientAddress.sin_port)
+		{
+			return true;
+		}
+	}
+
+	char ClientAdressBuffer[INET_ADDRSTRLEN];
+
+	inet_ntop(AF_INET, &(ClientAddress.sin_addr.s_addr), ClientAdressBuffer, INET_ADDRSTRLEN);
+
+	std::cout << "Client Queued: " << ClientAdressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
+
 	// If we have a peer that has already connected with the presider.
 	if (WaitingClient.sin_addr.s_addr != 0)
 	{
+		char WaitingClientAdressBuffer[INET_ADDRSTRLEN];
+
+		inet_ntop(AF_INET, &(WaitingClient.sin_addr.s_addr), WaitingClientAdressBuffer, INET_ADDRSTRLEN);
+
+		std::cout << "Matching Clients: " << ClientAdressBuffer << ":" << ntohs(ClientAddress.sin_port) << " | " << WaitingClientAdressBuffer << ":" << ntohs(WaitingClient.sin_port) << "\n";
+
 		std::string MessageA;
-		MessageA = "PEER" + ClientAddress.sin_addr.s_addr;
-		MessageA += ":" + ClientAddress.sin_port;
+		MessageA = "PEER" + std::to_string(ClientAddress.sin_addr.s_addr);
+		MessageA += ":" + std::to_string(ClientAddress.sin_port);
 
 		if (sendto(Socket, MessageA.c_str(), strlen(MessageA.c_str()) + 1, 0, (const sockaddr*)&WaitingClient, sizeof(WaitingClient)) <= 0)
 		{
@@ -78,8 +107,8 @@ bool PresiderServer::Update()
 		}
 
 		std::string MessageB;
-		MessageB = "PEER" + WaitingClient.sin_addr.s_addr;
-		MessageB += ":" + WaitingClient.sin_port;
+		MessageB = "PEER" + std::to_string(WaitingClient.sin_addr.s_addr);
+		MessageB += ":" + std::to_string(WaitingClient.sin_port);
 
 		if (sendto(Socket, MessageB.c_str(), strlen(MessageB.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
 		{
