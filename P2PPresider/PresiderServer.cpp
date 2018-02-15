@@ -4,21 +4,27 @@
 	#pragma comment(lib, "Ws2_32.lib")
 
 	#include <Ws2tcpip.h>
+#else
+	#define INVALID_SOCKET -1
 #endif
 
 #include <iostream>
 
 bool PresiderServer::Initialize()
 {
+#if OS_WINDOWS
 	if (WSAStartup(0x0202, &Data) == SOCKET_ERROR)
 	{
 		return false;
 	}
-
+#endif
+	
 	Socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (Socket == INVALID_SOCKET)
 	{
+#if OS_WINDOWS
 		WSACleanup();
+#endif
 
 		return false;
 	}
@@ -139,8 +145,13 @@ bool PresiderServer::Update()
 void PresiderServer::Shutdown()
 {
 	shutdown(Socket, 2);
+	
+#if OS_WINDOWS
 	closesocket(Socket);
 	WSACleanup();
+#else
+	close(Socket);
+#endif
 }
 
 std::string PresiderServer::GetHostName()
