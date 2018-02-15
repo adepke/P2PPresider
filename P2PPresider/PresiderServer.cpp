@@ -1,6 +1,10 @@
 #include "PresiderServer.h"
 
-#include <Ws2tcpip.h>
+#if OS_WINDOWS
+	#pragma comment(lib, "Ws2_32.lib")
+
+	#include <Ws2tcpip.h>
+#endif
 
 #include <iostream>
 
