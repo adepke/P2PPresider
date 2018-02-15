@@ -80,24 +80,26 @@ bool PresiderServer::Update()
 		}
 	}
 
-	char ClientAdressBuffer[INET_ADDRSTRLEN];
+	char ClientAddressBuffer[INET_ADDRSTRLEN];
 
-	inet_ntop(AF_INET, &(ClientAddress.sin_addr.s_addr), ClientAdressBuffer, INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &(ClientAddress.sin_addr.s_addr), ClientAddressBuffer, INET_ADDRSTRLEN);
 
-	std::cout << "Client Queued: " << ClientAdressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
+	std::cout << "Client Queued: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
 
 	// If we have a peer that has already connected with the presider.
 	if (WaitingClient.sin_addr.s_addr != 0)
 	{
-		char WaitingClientAdressBuffer[INET_ADDRSTRLEN];
+		char WaitingClientAddressBuffer[INET_ADDRSTRLEN];
 
-		inet_ntop(AF_INET, &(WaitingClient.sin_addr.s_addr), WaitingClientAdressBuffer, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, &(WaitingClient.sin_addr.s_addr), WaitingClientAddressBuffer, INET_ADDRSTRLEN);
 
-		std::cout << "Matching Clients: " << ClientAdressBuffer << ":" << ntohs(ClientAddress.sin_port) << " | " << WaitingClientAdressBuffer << ":" << ntohs(WaitingClient.sin_port) << "\n";
+		std::cout << "Matching Clients: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << " | " << WaitingClientAddressBuffer << ":" << ntohs(WaitingClient.sin_port) << "\n";
 
 		std::string MessageA;
-		MessageA = "PEER" + std::to_string(ClientAddress.sin_addr.s_addr);
-		MessageA += ":" + std::to_string(ClientAddress.sin_port);
+		MessageA = "PEER";
+		MessageA.append(ClientAddressBuffer);
+		MessageA += ":";
+		MessageA.append(std::to_string(ntohs(ClientAddress.sin_port)));
 
 		if (sendto(Socket, MessageA.c_str(), strlen(MessageA.c_str()) + 1, 0, (const sockaddr*)&WaitingClient, sizeof(WaitingClient)) <= 0)
 		{
@@ -107,8 +109,10 @@ bool PresiderServer::Update()
 		}
 
 		std::string MessageB;
-		MessageB = "PEER" + std::to_string(WaitingClient.sin_addr.s_addr);
-		MessageB += ":" + std::to_string(WaitingClient.sin_port);
+		MessageB = "PEER";
+		MessageB.append(WaitingClientAddressBuffer);
+		MessageB += ":";
+		MessageB.append(std::to_string(ntohs(WaitingClient.sin_port)));
 
 		if (sendto(Socket, MessageB.c_str(), strlen(MessageB.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
 		{
