@@ -67,7 +67,11 @@ bool PresiderServer::Update()
 	char* DataReceived = new char[32];
 
 	// Blocking call to recvfrom(), so we wait here until some data is received from a connecting client.
+#if OS_WINDOWS
 	int SizeReceived = recvfrom(Socket, DataReceived, 32, 0, (sockaddr*)&ClientAddress, &Size);
+#else
+	int SizeReceived = recvfrom(Socket, DataReceived, 32, 0, (sockaddr*)&ClientAddress, (socklen_t*)&Size);
+#endif
 
 	std::string DataString(DataReceived);
 
