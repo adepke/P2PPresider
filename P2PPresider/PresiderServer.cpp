@@ -74,7 +74,7 @@ bool PresiderServer::Update()
 	// Confirm this isn't the same client reconnecting.
 	if (WaitingClient.sin_addr.s_addr != 0)
 	{
-		if (WaitingClient.sin_addr.s_addr == ClientAddress.sin_addr.s_addr || WaitingClient.sin_port == ClientAddress.sin_port)
+		if (WaitingClient.sin_addr.s_addr == ClientAddress.sin_addr.s_addr && WaitingClient.sin_port == ClientAddress.sin_port)
 		{
 			return true;
 		}
