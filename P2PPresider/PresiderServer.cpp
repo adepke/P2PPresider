@@ -9,6 +9,7 @@
 #endif
 
 #include <iostream>
+#include <fstream>
 
 bool PresiderServer::Initialize()
 {
@@ -18,7 +19,7 @@ bool PresiderServer::Initialize()
 		return false;
 	}
 #endif
-	
+
 	Socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (Socket == INVALID_SOCKET)
 	{
@@ -38,11 +39,43 @@ bool PresiderServer::Initialize()
 		return false;
 	}
 
+	unsigned short Port = 735;
+
+	std::fstream ConfigStream;
+	ConfigStream.open("config.cfg", std::ios::in);
+	if (!ConfigStream.is_open())
+	{
+		std::cout << "Failed to Locate 'config.cfg' File\n";
+		std::cout << "Configuration Error, Resorting to Defaults.\n";
+	}
+
+	else
+	{
+		std::string Output;
+
+		std::getline(ConfigStream, Output);
+
+		size_t PortEntry = Output.find("port=", 0);
+
+		if (PortEntry != std::string::npos)
+		{
+			Port = (unsigned short)std::strtoul(Output.substr(PortEntry + 5).c_str(), NULL, 0);
+		}
+
+		else
+		{
+			std::cout << "Missing Expected Entry: 'port='\n";
+			std::cout << "Configuration Error, Resorting to Defaults.\n";
+		}
+
+		ConfigStream.close();
+	}
+
 	sockaddr_in SocketAddress;
 	ZeroMemory(&SocketAddress, sizeof(SocketAddress));
 	SocketAddress.sin_family = AF_INET;
 	SocketAddress.sin_addr.s_addr = INADDR_ANY;
-	SocketAddress.sin_port = htons(735);
+	SocketAddress.sin_port = htons(Port);
 
 	if (bind(Socket, (sockaddr*)&SocketAddress, sizeof(SocketAddress)) != 0)
 	{
@@ -149,13 +182,27 @@ bool PresiderServer::Update()
 void PresiderServer::Shutdown()
 {
 	shutdown(Socket, 2);
-	
+
 #if OS_WINDOWS
 	closesocket(Socket);
 	WSACleanup();
 #else
 	close(Socket);
 #endif
+}
+
+unsigned int PresiderServer::GetPort()
+{
+	struct sockaddr_in Local;
+	int Size = sizeof(Local);
+
+#if OS_WINDOWS
+	getsockname(Socket, (struct sockaddr *)&Local, &Size);
+#else
+	getsockname(Socket, (struct sockaddr *)&Local, (socklen_t*)&Size);
+#endif
+
+	return ntohs(Local.sin_port);
 }
 
 std::string PresiderServer::GetHostName()
