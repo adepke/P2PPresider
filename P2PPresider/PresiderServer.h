@@ -22,7 +22,7 @@
 class PresiderServer
 {
 protected:
-	
+
 #if OS_WINDOWS
 	WSAData Data;
 #endif
@@ -38,5 +38,6 @@ public:
 	virtual bool Update();
 	virtual void Shutdown();
 
+	virtual unsigned int GetPort();
 	virtual std::string GetHostName();
 };
