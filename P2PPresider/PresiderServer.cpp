@@ -181,7 +181,7 @@ bool PresiderServer::Update()
 
 		std::cout << "Client Has Peer Request From: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
 
-		std::string Result = (WaitingClient.sin_addr == 0 ? "FALSE" : "TRUE");
+		std::string Result = (WaitingClient.sin_addr.s_addr == 0 ? "FALSE" : "TRUE");
 
 		if (sendto(Socket, Result.c_str(), strlen(Result.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
 		{
