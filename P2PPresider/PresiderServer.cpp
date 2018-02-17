@@ -112,68 +112,89 @@ bool PresiderServer::Update()
 
 	DataString = DataString.substr(0, SizeReceived);
 
-	if (DataString != "CONNECT")
+	if (DataString == "CONNECT")
 	{
-		// This is not a failure, just a client that does not want to be paired.
-		return true;
-	}
-
-	// Confirm this isn't the same client reconnecting.
-	if (WaitingClient.sin_addr.s_addr != 0)
-	{
-		if (WaitingClient.sin_addr.s_addr == ClientAddress.sin_addr.s_addr && WaitingClient.sin_port == ClientAddress.sin_port)
+		// Confirm this isn't the same client reconnecting.
+		if (WaitingClient.sin_addr.s_addr != 0)
 		{
-			return true;
+			if (WaitingClient.sin_addr.s_addr == ClientAddress.sin_addr.s_addr && WaitingClient.sin_port == ClientAddress.sin_port)
+			{
+				return true;
+			}
+		}
+
+		char ClientAddressBuffer[INET_ADDRSTRLEN];
+
+		inet_ntop(AF_INET, &(ClientAddress.sin_addr.s_addr), ClientAddressBuffer, INET_ADDRSTRLEN);
+
+		std::cout << "Client Queued: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
+
+		// If we have a peer that has already connected with the presider.
+		if (WaitingClient.sin_addr.s_addr != 0)
+		{
+			char WaitingClientAddressBuffer[INET_ADDRSTRLEN];
+
+			inet_ntop(AF_INET, &(WaitingClient.sin_addr.s_addr), WaitingClientAddressBuffer, INET_ADDRSTRLEN);
+
+			std::cout << "Matching Clients: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << " | " << WaitingClientAddressBuffer << ":" << ntohs(WaitingClient.sin_port) << "\n";
+
+			std::string MessageA;
+			MessageA = "PEER";
+			MessageA.append(ClientAddressBuffer);
+			MessageA += ":";
+			MessageA.append(std::to_string(ntohs(ClientAddress.sin_port)));
+
+			if (sendto(Socket, MessageA.c_str(), strlen(MessageA.c_str()) + 1, 0, (const sockaddr*)&WaitingClient, sizeof(WaitingClient)) <= 0)
+			{
+				Shutdown();
+
+				return false;
+			}
+
+			std::string MessageB;
+			MessageB = "PEER";
+			MessageB.append(WaitingClientAddressBuffer);
+			MessageB += ":";
+			MessageB.append(std::to_string(ntohs(WaitingClient.sin_port)));
+
+			if (sendto(Socket, MessageB.c_str(), strlen(MessageB.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
+			{
+				Shutdown();
+
+				return false;
+			}
+
+			WaitingClient.sin_addr.s_addr = 0;
+		}
+
+		else
+		{
+			WaitingClient = ClientAddress;
 		}
 	}
 
-	char ClientAddressBuffer[INET_ADDRSTRLEN];
-
-	inet_ntop(AF_INET, &(ClientAddress.sin_addr.s_addr), ClientAddressBuffer, INET_ADDRSTRLEN);
-
-	std::cout << "Client Queued: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
-
-	// If we have a peer that has already connected with the presider.
-	if (WaitingClient.sin_addr.s_addr != 0)
+	else if (DataString == "HASPEER")
 	{
-		char WaitingClientAddressBuffer[INET_ADDRSTRLEN];
+		char ClientAddressBuffer[INET_ADDRSTRLEN];
 
-		inet_ntop(AF_INET, &(WaitingClient.sin_addr.s_addr), WaitingClientAddressBuffer, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, &(ClientAddress.sin_addr.s_addr), ClientAddressBuffer, INET_ADDRSTRLEN);
 
-		std::cout << "Matching Clients: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << " | " << WaitingClientAddressBuffer << ":" << ntohs(WaitingClient.sin_port) << "\n";
+		std::cout << "Client Has Peer Request From: " << ClientAddressBuffer << ":" << ntohs(ClientAddress.sin_port) << "\n";
 
-		std::string MessageA;
-		MessageA = "PEER";
-		MessageA.append(ClientAddressBuffer);
-		MessageA += ":";
-		MessageA.append(std::to_string(ntohs(ClientAddress.sin_port)));
+		std::string Result = (WaitingClient.sin_addr == 0 ? "FALSE" : "TRUE");
 
-		if (sendto(Socket, MessageA.c_str(), strlen(MessageA.c_str()) + 1, 0, (const sockaddr*)&WaitingClient, sizeof(WaitingClient)) <= 0)
+		if (sendto(Socket, Result.c_str(), strlen(Result.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
 		{
 			Shutdown();
 
 			return false;
 		}
-
-		std::string MessageB;
-		MessageB = "PEER";
-		MessageB.append(WaitingClientAddressBuffer);
-		MessageB += ":";
-		MessageB.append(std::to_string(ntohs(WaitingClient.sin_port)));
-
-		if (sendto(Socket, MessageB.c_str(), strlen(MessageB.c_str()) + 1, 0, (const sockaddr*)&ClientAddress, sizeof(ClientAddress)) <= 0)
-		{
-			Shutdown();
-
-			return false;
-		}
-
-		WaitingClient.sin_addr.s_addr = 0;
 	}
 
 	else
 	{
-		WaitingClient = ClientAddress;
+		// This is not a failure, just malformed data.
+		return true;
 	}
 
 	return true;
